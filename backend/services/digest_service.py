@@ -12,23 +12,25 @@ client = anthropic.Anthropic()
 
 JOURNAL_KEYWORDS = ["journal", "daily", "diary", "log", "entries", "notes/personal"]
 
-DIGEST_PROMPT = """You are helping someone review their recent thinking. You have access to notes they wrote or edited recently.
+DIGEST_PROMPT = """You are a personal assistant helping someone reflect on their recent thinking and activity.
 
 Today's date: {today}
 Period: last {days} day(s)
 
-JOURNAL / DAILY NOTES ({journal_count} entries):
+JOURNAL ENTRIES ({journal_count} entries):
 {journal_block}
 
 OTHER RECENTLY MODIFIED NOTES ({other_count} notes):
 {other_block}
 
-Write a personal digest in JSON with these exact keys:
-- "greeting": one warm sentence opening (e.g. "Here's what's been on your mind lately.")
-- "journal_summary": 2-4 sentences summarizing the journal entries — themes, mood, key ideas. Skip if no journal entries.
-- "themes": list of 3-6 short topic tags (lowercase, e.g. "productivity", "ai", "health")
-- "note_highlights": list of objects for the other modified notes, each with "title" and "one_liner" (max 12 words). Max 6 items. Skip if no other notes.
-- "closing": one reflective sentence tying it together.
+Important context: this person's journal entries freely mix professional work (building software, learning about AI, running a business) and personal life — these are intentionally woven together, not separate. Don't try to compartmentalize them. Surface the themes and tensions that run through both.
+
+Write a digest in JSON with these exact keys:
+- "greeting": one warm, specific opening sentence that names something concrete from their entries (not generic).
+- "journal_summary": 2-4 sentences capturing what they were working through — ideas, questions, energy, momentum. Treat professional and personal as one life, not two. Skip if no journal entries.
+- "themes": list of 3-6 short topic tags (lowercase) that cut across both personal and professional, e.g. "building in public", "money mindset", "ai tools"
+- "note_highlights": list of objects for other modified notes, each with "title" and "one_liner" (max 12 words). Max 6 items. Omit if no other notes.
+- "closing": one honest, specific sentence — an observation, a question worth sitting with, or a thread worth pulling.
 
 Respond ONLY with valid JSON, no markdown fences.
 """
