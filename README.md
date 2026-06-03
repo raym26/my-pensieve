@@ -118,6 +118,12 @@ All endpoints are prefixed with `/api`.
 | `GET` | `/api/notes/search?q=<query>` | Full-text search over notes |
 | `POST` | `/api/notes/{id}/tag` | Auto-tag a note with Claude |
 
+### Connections
+
+| Method | Path | Body / Params | Description |
+|---|---|---|---|
+| `GET` | `/api/connections/` | `note_id`, `explain?`, `limit?` | Find semantically related notes not already linked |
+
 ### Chat
 
 | Method | Path | Body | Description |
@@ -163,11 +169,13 @@ my-pensieve/
 │   ├── routers/
 │   │   ├── notes.py             # List, search, tag notes
 │   │   ├── chat.py              # Hybrid RAG chat endpoint
-│   │   └── ingest.py            # URL scrape → Claude summary → .md file
+│   │   ├── ingest.py            # URL scrape → Claude summary → .md file
+│   │   └── connections.py       # Semantic connection discovery
 │   ├── services/
 │   │   ├── vault_service.py     # Read Obsidian markdown files
 │   │   ├── rag_service.py       # ChromaDB index + semantic search
-│   │   └── tagging_service.py   # Claude-powered auto-tagger
+│   │   ├── tagging_service.py   # Claude-powered auto-tagger
+│   │   └── linking_service.py   # Surface connections between notes
 │   └── models/
 │       └── note.py              # Pydantic Note model
 ├── frontend/
@@ -183,6 +191,6 @@ my-pensieve/
 - [x] Phase 1: Vault reading + auto-tagging
 - [x] Phase 2: RAG chat with hybrid retrieval
 - [x] Phase 3: URL ingestion → structured Obsidian notes
-- [ ] Phase 4: Auto-linking — surface connections between notes
+- [x] Phase 4: Auto-linking — surface connections between notes
 - [ ] Phase 5: Daily digest / journal summary
 - [ ] Phase 6: Deploy as a product

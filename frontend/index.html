@@ -316,7 +316,150 @@
   .index-card p { color: var(--muted); font-size: 19px; line-height: 1.7; margin-bottom: 20px; }
   .big-num { font-size: 52px; font-weight: 300; color: var(--accent2); font-style: italic; }
 
-  .hidden { display: none; }
+  /* ── Connections View ── */
+  .connections-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  .connections-notelist {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .connections-search {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+  .connections-search input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 8px 12px;
+    outline: none;
+  }
+  .connections-search input:focus { border-color: var(--accent); }
+  .note-list-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    transition: background 0.15s;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .note-list-item:hover { background: var(--surface2); }
+  .note-list-item.selected {
+    background: rgba(123,108,255,0.1);
+    border-left: 2px solid var(--accent);
+  }
+  .note-list-item .nlf {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .connections-panel {
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+  .connections-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .connections-header h3 {
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--text);
+  }
+  .connections-header .source-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+  .connection-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .connection-card:hover { border-color: rgba(123,108,255,0.5); }
+  .connection-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .connection-title { font-size: 18px; line-height: 1.3; }
+  .relevance-badge {
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 3px;
+    background: rgba(123,108,255,0.12);
+    border: 1px solid rgba(123,108,255,0.3);
+    color: var(--accent2);
+  }
+  .relevance-badge.high {
+    background: rgba(74,222,128,0.1);
+    border-color: rgba(74,222,128,0.3);
+    color: var(--success);
+  }
+  .connection-folder {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .connection-reason {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+  .connections-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 20px;
+    font-size: 19px;
+    font-style: italic;
+    line-height: 1.8;
+  }
+  .explain-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .explain-toggle input { cursor: pointer; accent-color: var(--accent); }
+  .explain-toggle:hover { color: var(--accent2); }
+
+  .hidden { display: none !important; }
 
   /* scrollbar */
   ::-webkit-scrollbar { width: 4px; }
@@ -344,6 +487,9 @@
       </div>
       <div class="nav-item" onclick="showView('index')" id="nav-index">
         <span class="nav-icon">⊛</span> Index Vault
+      </div>
+      <div class="nav-item" onclick="showView('connections')" id="nav-connections">
+        <span class="nav-icon">⟡</span> Connections
       </div>
     </nav>
     <div class="vault-info" id="vault-info">
@@ -426,6 +572,29 @@
       </div>
     </div>
 
+    <!-- Connections -->
+    <div id="view-connections" class="hidden" style="height:100%;overflow:hidden;flex-direction:column;">
+      <div class="topbar">
+        <h2>Connections</h2>
+        <label class="explain-toggle">
+          <input type="checkbox" id="explain-toggle" onchange="reloadConnections()"> Ask Claude to explain
+        </label>
+      </div>
+      <div class="connections-layout" style="flex:1;overflow:hidden;">
+        <div class="connections-notelist">
+          <div class="connections-search">
+            <input type="text" id="conn-search" placeholder="Filter notes…" oninput="filterNoteList()" />
+          </div>
+          <div id="conn-note-list"></div>
+        </div>
+        <div class="connections-panel" id="conn-panel">
+          <div class="connections-empty">
+            Select a note on the left<br>to surface its hidden connections.
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -435,14 +604,17 @@ let chatHistory = [];
 
 // ── Navigation ──────────────────────────────────────────────────────────────
 function showView(name) {
-  ['chat','notes','ingest','index'].forEach(v => {
+  ['chat','notes','ingest','index','connections'].forEach(v => {
     document.getElementById(`view-${v}`).classList.add('hidden');
     document.getElementById(`nav-${v}`).classList.remove('active');
   });
-  document.getElementById(`view-${name}`).classList.remove('hidden');
+  const viewEl = document.getElementById(`view-${name}`);
+  viewEl.classList.remove('hidden');
+  viewEl.style.display = name === 'connections' ? 'flex' : '';
   document.getElementById(`nav-${name}`).classList.add('active');
   if (name === 'notes') loadNotes();
   if (name === 'index') loadIndexCount();
+  if (name === 'connections' && allConnNotes.length === 0) loadConnectionNotes();
 }
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
@@ -556,6 +728,104 @@ async function ingestUrl() {
     status.textContent = 'Error ingesting URL.';
     status.className = 'status-bar';
   }
+}
+
+// ── Connections ───────────────────────────────────────────────────────────────
+let allConnNotes = [];
+let selectedNoteId = null;
+
+async function loadConnectionNotes() {
+  try {
+    const res = await fetch(`${API}/notes/`);
+    allConnNotes = await res.json();
+    renderNoteList(allConnNotes);
+  } catch(e) {
+    document.getElementById('conn-note-list').innerHTML =
+      '<p style="padding:16px;color:var(--muted);font-size:13px">Could not load notes.</p>';
+  }
+}
+
+function filterNoteList() {
+  const q = document.getElementById('conn-search').value.toLowerCase();
+  const filtered = q ? allConnNotes.filter(n =>
+    n.title.toLowerCase().includes(q) || (n.folder||'').toLowerCase().includes(q)
+  ) : allConnNotes;
+  renderNoteList(filtered);
+}
+
+function renderNoteList(notes) {
+  const el = document.getElementById('conn-note-list');
+  el.innerHTML = notes.map(n => `
+    <div class="note-list-item ${n.id === selectedNoteId ? 'selected' : ''}"
+         onclick="selectNote('${CSS.escape(n.id)}', this)">
+      <div class="nlf">${n.folder || 'root'}</div>
+      <div>${n.title}</div>
+    </div>`).join('');
+}
+
+async function selectNote(noteId, el) {
+  selectedNoteId = noteId;
+  document.querySelectorAll('.note-list-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  await loadConnections(noteId);
+}
+
+async function reloadConnections() {
+  if (selectedNoteId) await loadConnections(selectedNoteId);
+}
+
+async function loadConnections(noteId) {
+  const panel = document.getElementById('conn-panel');
+  const explain = document.getElementById('explain-toggle').checked;
+  panel.innerHTML = `<div class="connections-empty" style="padding-top:40px">${explain ? 'Searching + asking Claude…' : 'Searching…'}</div>`;
+  try {
+    const params = new URLSearchParams({ note_id: noteId, explain, limit: 6 });
+    const res = await fetch(`${API}/connections/?${params}`);
+    const data = await res.json();
+    renderConnections(data);
+  } catch(e) {
+    panel.innerHTML = '<div class="connections-empty">Error — is the backend running?</div>';
+  }
+}
+
+function renderConnections(data) {
+  const panel = document.getElementById('conn-panel');
+  const conns = data.connections || [];
+
+  if (!conns.length) {
+    panel.innerHTML = `
+      <div class="connections-header">
+        <div><h3>${data.note_title}</h3><div class="source-note">No connections found — try re-indexing your vault.</div></div>
+      </div>`;
+    return;
+  }
+
+  const cards = conns.map(c => {
+    const badge = c.relevance >= 70
+      ? `<span class="relevance-badge high">${c.relevance}% match</span>`
+      : `<span class="relevance-badge">${c.relevance}% match</span>`;
+    const reason = c.reason
+      ? `<div class="connection-reason">${c.reason}</div>`
+      : '';
+    return `
+      <div class="connection-card">
+        <div class="connection-top">
+          <div class="connection-title">${c.title}</div>
+          ${badge}
+        </div>
+        <div class="connection-folder">${c.folder || 'root'}</div>
+        ${reason}
+      </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="connections-header">
+      <div>
+        <h3>${data.note_title}</h3>
+        <div class="source-note">${conns.length} suggested connection${conns.length !== 1 ? 's' : ''}</div>
+      </div>
+    </div>
+    ${cards}`;
 }
 
 // ── Index ─────────────────────────────────────────────────────────────────────
