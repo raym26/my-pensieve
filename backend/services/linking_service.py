@@ -77,11 +77,18 @@ class LinkingService:
         )
 
         try:
-            explanations = json.loads(response.content[0].text.strip())
-            title_to_reason = {e["title"]: e["reason"] for e in explanations}
-            for c in candidates:
-                c["reason"] = title_to_reason.get(c["title"])
-        except (json.JSONDecodeError, KeyError):
-            pass
+            raw = response.content[0].text.strip()
+            # Strip markdown code fences if Claude wraps the JSON
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+            explanations = json.loads(raw.strip())
+            # Use index order — the prompt guarantees same order as candidates
+            for i, c in enumerate(candidates):
+                if i < len(explanations):
+                    c["reason"] = explanations[i].get("reason")
+        except (json.JSONDecodeError, KeyError, IndexError) as e:
+            print(f"[linking] explain parse error: {e}\nRaw: {response.content[0].text[:300]}")
 
         return candidates
