@@ -170,12 +170,14 @@ my-pensieve/
 │   │   ├── notes.py             # List, search, tag notes
 │   │   ├── chat.py              # Hybrid RAG chat endpoint
 │   │   ├── ingest.py            # URL scrape → Claude summary → .md file
-│   │   └── connections.py       # Semantic connection discovery
+│   │   ├── connections.py       # Semantic connection discovery
+│   │   └── digest.py            # Daily/weekly digest endpoint
 │   ├── services/
 │   │   ├── vault_service.py     # Read Obsidian markdown files
 │   │   ├── rag_service.py       # ChromaDB index + semantic search
 │   │   ├── tagging_service.py   # Claude-powered auto-tagger
-│   │   └── linking_service.py   # Surface connections between notes
+│   │   ├── linking_service.py   # Surface connections between notes
+│   │   └── digest_service.py    # Journal summary + recent activity digest
 │   └── models/
 │       └── note.py              # Pydantic Note model
 ├── frontend/
@@ -192,5 +194,5 @@ my-pensieve/
 - [x] Phase 2: RAG chat with hybrid retrieval
 - [x] Phase 3: URL ingestion → structured Obsidian notes
 - [x] Phase 4: Auto-linking — surface connections between notes
-- [ ] Phase 5: Daily digest / journal summary
+- [x] Phase 5: Daily digest / journal summary
 - [ ] Phase 6: Deploy as a product

@@ -459,6 +459,122 @@
   .explain-toggle input { cursor: pointer; accent-color: var(--accent); }
   .explain-toggle:hover { color: var(--accent2); }
 
+  /* ── Digest View ── */
+  .digest-wrap { max-width: 680px; margin: 0 auto; }
+  .digest-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .period-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 7px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .period-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .period-btn.active {
+    background: rgba(123,108,255,0.12);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+  .digest-output { animation: fadeUp 0.4s ease; }
+  .digest-greeting {
+    font-size: 22px;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent2);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .digest-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .digest-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .digest-section-body {
+    font-size: 19px;
+    line-height: 1.75;
+    color: var(--text);
+  }
+  .digest-themes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .digest-theme {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    background: rgba(212,168,83,0.1);
+    border: 1px solid rgba(212,168,83,0.3);
+    border-radius: 3px;
+    color: var(--gold);
+  }
+  .highlight-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(42,42,58,0.6);
+  }
+  .highlight-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .highlight-title {
+    font-size: 17px;
+    color: var(--accent2);
+    flex-shrink: 0;
+    min-width: 160px;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .highlight-line {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .digest-closing {
+    font-size: 18px;
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+    padding-top: 8px;
+  }
+  .digest-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 60px 20px;
+    font-size: 19px;
+    font-style: italic;
+    line-height: 1.8;
+  }
+  .digest-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    letter-spacing: 0.05em;
+  }
+
   .hidden { display: none !important; }
 
   /* scrollbar */
@@ -490,6 +606,9 @@
       </div>
       <div class="nav-item" onclick="showView('connections')" id="nav-connections">
         <span class="nav-icon">⟡</span> Connections
+      </div>
+      <div class="nav-item" onclick="showView('digest')" id="nav-digest">
+        <span class="nav-icon">◉</span> Digest
       </div>
     </nav>
     <div class="vault-info" id="vault-info">
@@ -572,6 +691,23 @@
       </div>
     </div>
 
+    <!-- Digest -->
+    <div id="view-digest" class="hidden">
+      <div class="topbar"><h2>Daily Digest</h2></div>
+      <div class="content">
+        <div class="digest-wrap">
+          <div class="digest-controls">
+            <button class="period-btn active" onclick="setDigestPeriod(1, this)">Today</button>
+            <button class="period-btn" onclick="setDigestPeriod(3, this)">Last 3 days</button>
+            <button class="period-btn" onclick="setDigestPeriod(7, this)">Last week</button>
+            <button class="btn primary" onclick="generateDigest()" style="margin-left:auto;">◉ Generate</button>
+          </div>
+          <div class="status-bar" id="digest-status"></div>
+          <div id="digest-output"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Connections -->
     <div id="view-connections" class="hidden" style="height:100%;overflow:hidden;flex-direction:column;">
       <div class="topbar">
@@ -604,7 +740,7 @@ let chatHistory = [];
 
 // ── Navigation ──────────────────────────────────────────────────────────────
 function showView(name) {
-  ['chat','notes','ingest','index','connections'].forEach(v => {
+  ['chat','notes','ingest','index','connections','digest'].forEach(v => {
     document.getElementById(`view-${v}`).classList.add('hidden');
     document.getElementById(`nav-${v}`).classList.remove('active');
   });
@@ -728,6 +864,89 @@ async function ingestUrl() {
     status.textContent = 'Error ingesting URL.';
     status.className = 'status-bar';
   }
+}
+
+// ── Digest ────────────────────────────────────────────────────────────────────
+let digestDays = 1;
+
+function setDigestPeriod(days, btn) {
+  digestDays = days;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function generateDigest() {
+  const status = document.getElementById('digest-status');
+  const output = document.getElementById('digest-output');
+  status.textContent = 'Reading your notes and thinking…';
+  status.className = 'status-bar loading';
+  output.innerHTML = '';
+  try {
+    const res = await fetch(`${API}/digest/?days=${digestDays}`);
+    const data = await res.json();
+    status.textContent = '';
+    renderDigest(data);
+  } catch(e) {
+    status.textContent = 'Error — is the backend running?';
+    status.className = 'status-bar';
+  }
+}
+
+function renderDigest(data) {
+  const output = document.getElementById('digest-output');
+
+  if (data.empty) {
+    const label = digestDays === 1 ? 'today' : `the last ${digestDays} days`;
+    output.innerHTML = `<div class="digest-empty">Nothing modified in ${label}.<br>Your vault is quiet.</div>`;
+    return;
+  }
+
+  const period = digestDays === 1 ? 'Today' : `Last ${digestDays} days`;
+  const parts = [];
+
+  // Meta line
+  parts.push(`<div class="digest-meta">${period} · ${data.journal_count} journal note${data.journal_count !== 1 ? 's' : ''} · ${data.other_count} other note${data.other_count !== 1 ? 's' : ''} modified</div>`);
+
+  // Greeting
+  if (data.greeting) {
+    parts.push(`<div class="digest-greeting">${data.greeting}</div>`);
+  }
+
+  // Themes
+  if (data.themes?.length) {
+    const tags = data.themes.map(t => `<span class="digest-theme">${t}</span>`).join('');
+    parts.push(`<div class="digest-themes">${tags}</div>`);
+  }
+
+  // Journal summary
+  if (data.journal_summary) {
+    parts.push(`
+      <div class="digest-section">
+        <div class="digest-section-label">Journal</div>
+        <div class="digest-section-body">${data.journal_summary}</div>
+      </div>`);
+  }
+
+  // Note highlights
+  if (data.note_highlights?.length) {
+    const items = data.note_highlights.map(h => `
+      <div class="highlight-item">
+        <div class="highlight-title">${h.title}</div>
+        <div class="highlight-line">${h.one_liner}</div>
+      </div>`).join('');
+    parts.push(`
+      <div class="digest-section">
+        <div class="digest-section-label">Also on your radar</div>
+        ${items}
+      </div>`);
+  }
+
+  // Closing
+  if (data.closing) {
+    parts.push(`<div class="digest-closing">${data.closing}</div>`);
+  }
+
+  output.innerHTML = `<div class="digest-output">${parts.join('')}</div>`;
 }
 
 // ── Connections ───────────────────────────────────────────────────────────────
