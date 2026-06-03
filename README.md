@@ -1,73 +1,188 @@
-# Pensieve — Second Brain
+# Pensieve — AI Second Brain for Obsidian
 
-A local AI-powered second brain built on your Obsidian vault.
+A local AI assistant that knows your Obsidian vault. Ask questions about your notes, auto-tag them, and clip articles from the web — all powered by Claude and a local vector store.
 
-## Features
-- **Chat** — Ask questions, get answers grounded in your notes (RAG)
-- **Auto-tag** — Claude suggests tags and summaries for your notes
-- **Ingest** — Paste a URL, get a structured Obsidian note saved automatically
-- **Index** — Embed all notes into a local vector store (ChromaDB)
+---
+
+## What It Does
+
+| Feature | Description |
+|---|---|
+| **Chat** | Ask anything. Pensieve retrieves relevant notes and answers with citations. |
+| **Auto-tag** | Claude reads a note and suggests tags + a one-line summary. |
+| **Ingest URL** | Paste a link. Pensieve scrapes it, summarizes it with Claude, and saves a structured `.md` file to your vault. |
+| **Index Vault** | Embeds all your notes into a local ChromaDB vector store for semantic search. |
+
+Everything runs locally — your notes never leave your machine except for the Claude API call.
+
+---
+
+## How the RAG Works
+
+When you send a chat message, Pensieve runs a two-pass retrieval:
+
+1. **Title match** — scans all note filenames for exact/partial matches (catches journal entries like "May 2026", named topics, etc.)
+2. **Semantic search** — queries ChromaDB with sentence embeddings to find conceptually related notes
+
+Results are merged, deduplicated, and capped at 12 notes. The top context is injected into the Claude prompt along with your conversation history.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI + Uvicorn |
+| LLM | Anthropic Claude (`claude-sonnet-4-20250514`) |
+| Vector store | ChromaDB (local, persistent) |
+| Embeddings | `all-MiniLM-L6-v2` via `chromadb` default EF |
+| Web scraping | `httpx` + `BeautifulSoup4` |
+| Frontend | Plain HTML/JS (no build step) |
+| Notes format | Obsidian Markdown with YAML frontmatter |
+
+---
+
+## Prerequisites
+
+- Python 3.10+
+- An [Anthropic API key](https://console.anthropic.com/)
+- An Obsidian vault on your local machine
+
+---
 
 ## Setup
 
-### 1. Clone and install backend dependencies
+### 1. Clone the repo
+
 ```bash
+git clone https://github.com/raym26/my-pensieve.git
+cd my-pensieve
+```
+
+### 2. Create a virtual environment and install dependencies
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 cd backend
 pip install -r requirements.txt
 ```
 
-### 2. Set your Anthropic API key
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-Or add it to a `.env` file in `/backend`.
+### 3. Configure environment variables
 
-### 3. Verify your vault path
-Open `backend/config.py` and confirm `VAULT_PATH` points to your Obsidian vault.
+Create a `.env` file inside `backend/`:
+
+```bash
+# backend/.env
+ANTHROPIC_API_KEY=sk-ant-...
+VAULT_PATH=/path/to/your/Obsidian Vault
+PROJECT_ROOT=/path/to/my-pensieve
+```
+
+All three values can also be set as shell exports instead. `VAULT_PATH` and `PROJECT_ROOT` fall back to hardcoded defaults in `config.py` — update those if you prefer not to use `.env`.
 
 ### 4. Start the backend
+
 ```bash
 cd backend
 uvicorn main:app --reload --port 8000
 ```
 
-### 5. Open the frontend
-Just open `frontend/index.html` in your browser. No build step needed.
+The API will be available at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
 
-## First Run Workflow
-1. Open the app → go to **Index Vault** → click "Index All Notes"
-   - This embeds all your notes into ChromaDB (one-time, ~1-2 min)
-2. Go to **Chat** and start asking questions
-3. Use **Ingest URL** to save articles into your vault
+### 5. Open the frontend
+
+Open `frontend/index.html` directly in your browser. No build step, no Node.
+
+---
+
+## First Run
+
+1. Go to **Index Vault** → click "Index All Notes"
+   - Embeds every `.md` file in your vault into ChromaDB (~1–2 min for large vaults)
+   - Only needs to run once; re-run after adding many new notes
+2. Go to **Chat** and ask a question
+3. Use **Ingest URL** to clip an article — it lands in your vault as a formatted `.md` note
+
+---
+
+## API Reference
+
+All endpoints are prefixed with `/api`.
+
+### Notes
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/notes` | List all notes in the vault |
+| `GET` | `/api/notes/search?q=<query>` | Full-text search over notes |
+| `POST` | `/api/notes/{id}/tag` | Auto-tag a note with Claude |
+
+### Chat
+
+| Method | Path | Body | Description |
+|---|---|---|---|
+| `POST` | `/api/chat/` | `{ message, history[] }` | RAG chat with your vault |
+
+### Ingest
+
+| Method | Path | Body | Description |
+|---|---|---|---|
+| `POST` | `/api/ingest/url` | `{ url, folder? }` | Scrape URL, summarize, save to vault |
+
+### Health
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Liveness check |
+
+---
+
+## Configuration Reference
+
+All config lives in `backend/config.py` and can be overridden with environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `VAULT_PATH` | `~/Documents/Obsidian Vault` | Path to your Obsidian vault |
+| `PROJECT_ROOT` | Path to repo | Used to locate `data/chroma/` |
+| `CHROMA_PATH` | `{PROJECT_ROOT}/data/chroma` | Where ChromaDB persists its index |
+| `ANTHROPIC_API_KEY` | _(required)_ | Your Anthropic API key |
+
+---
 
 ## Project Structure
+
 ```
-second-brain/
+my-pensieve/
 ├── backend/
-│   ├── main.py              # FastAPI app
-│   ├── config.py            # Vault path, settings
+│   ├── main.py                  # FastAPI app, CORS, router mounts
+│   ├── config.py                # Env-driven configuration
 │   ├── requirements.txt
+│   ├── reindex.py               # CLI script to rebuild the vector index
 │   ├── routers/
-│   │   ├── notes.py         # List, search, tag notes
-│   │   ├── chat.py          # RAG chat endpoint
-│   │   └── ingest.py        # URL scraping + saving
+│   │   ├── notes.py             # List, search, tag notes
+│   │   ├── chat.py              # Hybrid RAG chat endpoint
+│   │   └── ingest.py            # URL scrape → Claude summary → .md file
 │   ├── services/
-│   │   ├── vault_service.py # Read Obsidian markdown files
-│   │   ├── tagging_service.py # Auto-tag with Claude
-│   │   └── rag_service.py   # ChromaDB vector store
+│   │   ├── vault_service.py     # Read Obsidian markdown files
+│   │   ├── rag_service.py       # ChromaDB index + semantic search
+│   │   └── tagging_service.py   # Claude-powered auto-tagger
 │   └── models/
-│       └── note.py          # Pydantic models
+│       └── note.py              # Pydantic Note model
 ├── frontend/
-│   └── index.html           # Local web UI
+│   └── index.html               # Local web UI (no build needed)
 └── data/
-    └── chroma/              # Vector DB (auto-created)
+    └── chroma/                  # Vector DB (auto-created, gitignored)
 ```
 
+---
+
 ## Roadmap
-- [x] Phase 1: Organization (auto-tagging, vault reading)
-- [x] Phase 2: RAG chat
-- [x] Phase 3: URL ingestion
-- [ ] Phase 4: Auto-linking (surface connections between notes)
+
+- [x] Phase 1: Vault reading + auto-tagging
+- [x] Phase 2: RAG chat with hybrid retrieval
+- [x] Phase 3: URL ingestion → structured Obsidian notes
+- [ ] Phase 4: Auto-linking — surface connections between notes
 - [ ] Phase 5: Daily digest / journal summary
-- [ ] Phase 6: Deploy as product
-- 
+- [ ] Phase 6: Deploy as a product
