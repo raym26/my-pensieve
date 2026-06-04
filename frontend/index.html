@@ -1072,6 +1072,18 @@ async function indexVault() {
     status.className = 'status-bar';
   }
 }
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function initVaultInfo() {
+  try {
+    const res = await fetch(`${API}/notes/`);
+    const notes = await res.json();
+    document.getElementById('vault-info').innerHTML = `VAULT<br>${notes.length} notes loaded`;
+  } catch(e) {
+    document.getElementById('vault-info').innerHTML = `VAULT<br>backend offline`;
+  }
+}
+
+initVaultInfo();
 </script>
 </body>
 </html>
