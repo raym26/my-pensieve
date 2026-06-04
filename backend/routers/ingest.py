@@ -66,18 +66,20 @@ def save_as_note(data: dict, url: str, folder: str) -> str:
     filename = f"{safe_title[:60]}.md"
     filepath = target_folder / filename
 
-    tags_yaml = "\n  - ".join(data.get("tags", []))
     key_points = "\n".join(f"- {p}" for p in data.get("key_points", []))
     date_str = datetime.now().strftime("%Y-%m-%d")
 
+    import yaml
+    frontmatter = yaml.dump({
+        "title": data["title"],
+        "url": url,
+        "tags": data.get("tags", []),
+        "date": date_str,
+        "source": "ingested",
+    }, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
     note_content = f"""---
-title: {data['title']}
-url: {url}
-tags:
-  - {tags_yaml}
-date: {date_str}
-source: ingested
----
+{frontmatter}---
 
 ## Summary
 {data['summary']}
