@@ -45,6 +45,11 @@ Content:
     )
     import json
     raw = response.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
     try:
         return json.loads(raw)
     except Exception:
