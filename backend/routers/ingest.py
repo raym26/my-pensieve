@@ -60,7 +60,7 @@ def save_as_note(data: dict, url: str, folder: str) -> str:
     """Write a structured markdown note to the Obsidian vault."""
     vault = Path(VAULT_PATH)
     target_folder = vault / folder
-    target_folder.mkdir(exist_ok=True)
+    target_folder.mkdir(parents=True, exist_ok=True)
 
     safe_title = "".join(c for c in data["title"] if c.isalnum() or c in " -_").strip()
     filename = f"{safe_title[:60]}.md"
