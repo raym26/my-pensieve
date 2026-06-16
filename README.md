@@ -12,6 +12,8 @@ A local AI assistant that knows your Obsidian vault. Ask questions about your no
 | **Auto-tag** | Claude reads a note and suggests tags + a one-line summary. |
 | **Ingest URL** | Paste a link. Pensieve scrapes it, summarizes it with Claude, and saves a structured `.md` file to your vault. |
 | **Index Vault** | Embeds all your notes into a local ChromaDB vector store for semantic search. |
+| **Connections** | Select a note and surface semantically related notes you haven't explicitly linked. Optionally ask Claude to explain why they're connected. |
+| **Daily Digest** | Generate a journal summary + highlights of notes modified in the last 1, 3, or 7 days. |
 
 Everything runs locally — your notes never leave your machine except for the Claude API call.
 
@@ -33,7 +35,7 @@ Results are merged, deduplicated, and capped at 12 notes. The top context is inj
 | Layer | Technology |
 |---|---|
 | Backend | FastAPI + Uvicorn |
-| LLM | Anthropic Claude (`claude-sonnet-4-20250514`) |
+| LLM | Anthropic Claude (`claude-sonnet-4-6`) |
 | Vector store | ChromaDB (local, persistent) |
 | Embeddings | `all-MiniLM-L6-v2` via `chromadb` default EF |
 | Web scraping | `httpx` + `BeautifulSoup4` |
@@ -70,16 +72,19 @@ pip install -r requirements.txt
 
 ### 3. Configure environment variables
 
-Create a `.env` file inside `backend/`:
+Copy the example and fill in your values:
+
+```bash
+cp backend/.env.example backend/.env
+```
 
 ```bash
 # backend/.env
 ANTHROPIC_API_KEY=sk-ant-...
 VAULT_PATH=/path/to/your/Obsidian Vault
-PROJECT_ROOT=/path/to/my-pensieve
 ```
 
-All three values can also be set as shell exports instead. `VAULT_PATH` and `PROJECT_ROOT` fall back to hardcoded defaults in `config.py` — update those if you prefer not to use `.env`.
+`backend/.env` is loaded automatically on startup via `python-dotenv`. `VAULT_PATH` falls back to the default in `config.py` if not set.
 
 ### 4. Start the backend
 
@@ -182,8 +187,9 @@ my-pensieve/
 │       └── note.py              # Pydantic Note model
 ├── frontend/
 │   └── index.html               # Local web UI (no build needed)
-└── data/
-    └── chroma/                  # Vector DB (auto-created, gitignored)
+├── data/
+│   └── chroma/                  # Vector DB (auto-created, gitignored)
+└── STARTUP.txt                  # Quick-start reference
 ```
 
 ---
