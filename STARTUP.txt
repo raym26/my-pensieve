@@ -1,0 +1,29 @@
+HOW TO START SECOND BRAIN (PENSIEVE)
+=====================================
+
+1. OPEN TERMINAL — navigate to backend
+   cd /Users/raymundozialcita/Documents/CODEDAMMIT/AGENTS/second-brain/backend
+
+2. ACTIVATE VIRTUAL ENV
+   source ../.venv/bin/activate
+
+3. START BACKEND
+   uvicorn main:app --reload
+
+   Backend runs at: http://127.0.0.1:8000
+
+4. OPEN FRONTEND
+   Open frontend/index.html in your browser
+   (just double-click the file)
+
+REQUIREMENTS
+------------
+- backend/.env must exist with:
+    ANTHROPIC_API_KEY=sk-ant-...
+    VAULT_PATH=/Users/raymundozialcita/Documents/Obsidian Vault
+
+TROUBLESHOOTING
+---------------
+- "Failed to fetch"        → backend is not running (do step 1-3)
+- "Permission denied"      → wrong VAULT_PATH in backend/.env
+- "Could not resolve auth" → missing or wrong ANTHROPIC_API_KEY in backend/.env
