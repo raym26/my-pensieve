@@ -850,6 +850,11 @@ async function ingestUrl() {
       body: JSON.stringify({ url, folder })
     });
     const data = await res.json();
+    if (!res.ok) {
+      status.textContent = `Error: ${data.detail || 'Unknown error'}`;
+      status.className = 'status-bar';
+      return;
+    }
     status.textContent = '✓ Saved to vault';
     status.className = 'status-bar ok';
     result.innerHTML = `
@@ -861,7 +866,7 @@ async function ingestUrl() {
       </div>`;
     result.classList.remove('hidden');
   } catch(e) {
-    status.textContent = 'Error ingesting URL.';
+    status.textContent = `Error: ${e.message}`;
     status.className = 'status-bar';
   }
 }

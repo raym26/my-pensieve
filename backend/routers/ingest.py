@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import anthropic
 import httpx
@@ -39,7 +39,7 @@ Content:
 {text}
 """
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=800,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -97,9 +97,18 @@ def save_as_note(data: dict, url: str, folder: str) -> str:
 @router.post("/url")
 def ingest_url(req: IngestRequest):
     """Scrape a URL, summarize it with Claude, and save as an Obsidian note."""
-    text = scrape_url(req.url)
-    data = summarize_article(req.url, text)
-    note_path = save_as_note(data, req.url, req.folder)
+    try:
+        text = scrape_url(req.url)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch URL: {e}")
+    try:
+        data = summarize_article(req.url, text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to summarize: {e}")
+    try:
+        note_path = save_as_note(data, req.url, req.folder)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save note: {e}")
     return {
         "note_path": note_path,
         "title": data["title"],
