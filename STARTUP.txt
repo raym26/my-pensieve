@@ -12,9 +12,15 @@ HOW TO START SECOND BRAIN (PENSIEVE)
 
    Backend runs at: http://127.0.0.1:8000
 
-4. OPEN FRONTEND
-   Open frontend/index.html in your browser
-   (just double-click the file)
+4. OPEN THE APP
+   Go to http://localhost:8000 in your browser
+   (do NOT double-click index.html — use the URL above)
+
+IMPORTANT
+---------
+- Keep the terminal open while using the app.
+- If you close the terminal, the backend stops and the app won't work.
+- Ingest can take 30-60 seconds — wait for the result, do not click again.
 
 REQUIREMENTS
 ------------
@@ -24,6 +30,6 @@ REQUIREMENTS
 
 TROUBLESHOOTING
 ---------------
-- "Failed to fetch"        → backend is not running (do step 1-3)
+- "Failed to fetch"        → backend is not running (do step 1-3), then refresh
 - "Permission denied"      → wrong VAULT_PATH in backend/.env
 - "Could not resolve auth" → missing or wrong ANTHROPIC_API_KEY in backend/.env

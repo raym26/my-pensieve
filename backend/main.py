@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from routers import notes, chat, ingest, connections, digest
 
 app = FastAPI(title="Second Brain API")
@@ -24,3 +26,9 @@ app.include_router(digest.router, prefix="/api/digest", tags=["digest"])
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse(FRONTEND_DIR / "index.html")
