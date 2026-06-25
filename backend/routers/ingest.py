@@ -17,13 +17,27 @@ class IngestRequest(BaseModel):
 
 
 def scrape_url(url: str) -> str:
-    """Fetch and extract main text content from a URL."""
+    """Fetch and extract main text content from a URL.
+    Falls back to Jina Reader for JavaScript-heavy pages."""
     headers = {"User-Agent": "Mozilla/5.0"}
     resp = httpx.get(url, headers=headers, timeout=15, follow_redirects=True)
     soup = BeautifulSoup(resp.text, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()
-    return soup.get_text(separator="\n", strip=True)[:6000]
+    text = soup.get_text(separator="\n", strip=True)
+
+    # If the page requires JS, fall back to Jina Reader which renders it server-side
+    js_signals = ["enable javascript", "javascript is required", "javascript is disabled", "please enable js"]
+    if len(text) < 500 or any(s in text.lower() for s in js_signals):
+        jina_resp = httpx.get(
+            f"https://r.jina.ai/{url}",
+            headers={"Accept": "text/plain"},
+            timeout=30,
+            follow_redirects=True,
+        )
+        text = jina_resp.text
+
+    return text[:6000]
 
 
 def summarize_article(url: str, text: str) -> dict:
